@@ -22,3 +22,41 @@ class AssetResponse(AssetBase):
 
     class Config:
         from_attributes = True
+
+class SensorBase(BaseModel):
+    sensor_name: str
+    sensor_type: str
+    unit: Optional[str] = None
+    min_valid_value: Optional[float] = None
+    max_valid_value: Optional[float] = None
+    sampling_interval_seconds: Optional[int] = None
+    is_active: Optional[bool] = True
+    asset_id: Optional[uuid.UUID] = None
+
+class SensorCreate(SensorBase):
+    pass
+
+class SensorResponse(SensorBase):
+    sensor_id: uuid.UUID
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class TelemetryEventBase(BaseModel):
+    timestamp: datetime
+    sensor_id: uuid.UUID
+    asset_id: uuid.UUID
+    value: float
+    quality_flag: Optional[str] = "valid"
+    ingestion_source: Optional[str] = None
+    metadata_json: Optional[dict] = None
+
+class TelemetryEventCreate(TelemetryEventBase):
+    pass
+
+class TelemetryEventResponse(TelemetryEventBase):
+    event_id: uuid.UUID
+
+    class Config:
+        from_attributes = True

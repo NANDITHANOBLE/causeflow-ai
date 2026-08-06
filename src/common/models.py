@@ -3,6 +3,34 @@ from sqlalchemy import Column, String, ForeignKey, Integer, Numeric, Date, TIMES
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from src.common.database import Base
+from sqlalchemy import Boolean, Float, JSON
+from sqlalchemy.dialects.postgresql import JSONB
+
+class Sensor(Base):
+    __tablename__ = "sensors"
+
+    sensor_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("assets.asset_id"))
+    sensor_name = Column(String(255), nullable=False)
+    sensor_type = Column(String(100), nullable=False)
+    unit = Column(String(32))
+    min_valid_value = Column(Numeric)
+    max_valid_value = Column(Numeric)
+    sampling_interval_seconds = Column(Integer)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+class TelemetryEvent(Base):
+    __tablename__ = "telemetry_events"
+
+    event_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    timestamp = Column(TIMESTAMP(timezone=True), primary_key=True, nullable=False)
+    sensor_id = Column(UUID(as_uuid=True), ForeignKey("sensors.sensor_id"))
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("assets.asset_id"))
+    value = Column(Float, nullable=False)
+    quality_flag = Column(String(30), default="valid")
+    ingestion_source = Column(String(50))
+    metadata_json = Column("metadata", JSONB)
 
 class Plant(Base):
     __tablename__ = "plants"
