@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from src.api.routes import health
+from src.api.routes import health, assets
 
 app = FastAPI(
     title="CauseFlow AI",
@@ -8,6 +8,7 @@ app = FastAPI(
 )
 
 app.include_router(health.router)
+app.include_router(assets.router)
 
 @app.get("/")
 def root():
