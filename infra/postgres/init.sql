@@ -87,3 +87,101 @@ CREATE TABLE production_batches (
     quality_status VARCHAR(50),
     metadata JSONB
 );
+
+-- Anomalies
+CREATE TABLE anomalies (
+    anomaly_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id UUID REFERENCES assets(asset_id),
+    detected_at TIMESTAMPTZ NOT NULL,
+    model_name VARCHAR(100),
+    model_version VARCHAR(100),
+    anomaly_score NUMERIC(8,5),
+    severity VARCHAR(20),
+    affected_features JSONB,
+    status VARCHAR(30) DEFAULT 'open',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Incidents
+CREATE TABLE incidents (
+    incident_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    incident_code VARCHAR(50) UNIQUE NOT NULL,
+    plant_id UUID REFERENCES plants(plant_id),
+    line_id UUID REFERENCES production_lines(line_id),
+    primary_asset_id UUID REFERENCES assets(asset_id),
+    title VARCHAR(255),
+    description TEXT,
+    severity VARCHAR(20),
+    status VARCHAR(30) DEFAULT 'open',
+    started_at TIMESTAMPTZ,
+    resolved_at TIMESTAMPTZ,
+    business_impact_score NUMERIC(8,3),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Incident <-> Anomaly link table
+CREATE TABLE incident_anomalies (
+    incident_id UUID REFERENCES incidents(incident_id),
+    anomaly_id UUID REFERENCES anomalies(anomaly_id),
+    PRIMARY KEY (incident_id, anomaly_id)
+);
+
+-- Root cause hypotheses
+CREATE TABLE root_cause_hypotheses (
+    hypothesis_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    incident_id UUID REFERENCES incidents(incident_id),
+    factor_name VARCHAR(255),
+    factor_type VARCHAR(100),
+    causal_confidence NUMERIC(6,5),
+    rank INTEGER,
+    evidence JSONB,
+    causal_path JSONB,
+    model_name VARCHAR(100),
+    model_version VARCHAR(100),
+    confirmed_by_operator BOOLEAN,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Forecasts
+CREATE TABLE forecasts (
+    forecast_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    incident_id UUID REFERENCES incidents(incident_id),
+    asset_id UUID REFERENCES assets(asset_id),
+    forecast_type VARCHAR(100),
+    horizon_hours INTEGER,
+    predicted_probability NUMERIC(6,5),
+    estimated_impact JSONB,
+    confidence_interval JSONB,
+    model_version VARCHAR(100),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Recommendations
+CREATE TABLE recommendations (
+    recommendation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    incident_id UUID REFERENCES incidents(incident_id),
+    action_type VARCHAR(100),
+    action_description TEXT,
+    priority VARCHAR(20),
+    expected_benefit JSONB,
+    estimated_cost NUMERIC(12,2),
+    estimated_downtime_minutes INTEGER,
+    risk_score NUMERIC(6,5),
+    safety_status VARCHAR(50),
+    explanation TEXT,
+    status VARCHAR(30) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Operator feedback
+CREATE TABLE operator_feedback (
+    feedback_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    incident_id UUID REFERENCES incidents(incident_id),
+    recommendation_id UUID REFERENCES recommendations(recommendation_id),
+    user_id VARCHAR(255),
+    feedback_type VARCHAR(100),
+    accepted BOOLEAN,
+    outcome VARCHAR(100),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
