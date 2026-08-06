@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: causeflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: causeflow_user
+      POSTGRES_PASSWORD: causeflow_pass
+      POSTGRES_DB: causeflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U causeflow_user -d causeflow_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
