@@ -60,3 +60,28 @@ def compute_health_features(df: pd.DataFrame) -> pd.DataFrame:
         df["temperature_change_15m"] = df["temperature_celsius"].diff(15).fillna(0)
 
     return df
+
+def compute_seasonal_detrend_features(
+    df: pd.DataFrame,
+    value_col: str,
+    season_length: int = 1440,   # 24h at 1-min intervals
+    baseline_window: int = 4320  # 3 days - resists contamination from ~500min incidents
+) -> pd.DataFrame:
+    """
+    Removes the daily cycle by differencing against the same time-of-day
+    exactly one season (24h) ago, then computes a rolling z-score using a
+    LONG (3-day) trailing baseline so a single incident (~500 min) cannot
+    meaningfully pollute the baseline mean/std.
+    """
+    result = df.copy()
+
+    diff_col = f"{value_col}_diff_24h"
+    result[diff_col] = result[value_col] - result[value_col].shift(season_length)
+
+    shifted_diff = result[diff_col].shift(1)
+    roll_mean = shifted_diff.rolling(window=baseline_window, min_periods=200).mean()
+    roll_std = shifted_diff.rolling(window=baseline_window, min_periods=200).std()
+
+    result[f"{value_col}_diff_zscore"] = (result[diff_col] - roll_mean) / (roll_std + 1e-9)
+
+    return result
