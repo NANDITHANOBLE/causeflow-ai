@@ -65,3 +65,17 @@ class Asset(Base):
     criticality_score = Column(Numeric(4, 2))
     operational_status = Column(String(50), default="active")
     created_at = Column(TIMESTAMP, server_default=func.now())
+
+class Anomaly(Base):
+    __tablename__ = "anomalies"
+
+    anomaly_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("assets.asset_id"))
+    detected_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    model_name = Column(String(100))
+    model_version = Column(String(100))
+    anomaly_score = Column(Numeric(8, 5))
+    severity = Column(String(20))
+    affected_features = Column(JSONB)
+    status = Column(String(30), default="open")
+    created_at = Column(TIMESTAMP, server_default=func.now())
